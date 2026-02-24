@@ -1,0 +1,108 @@
+// 1. Импорт нужных классов Android
+package discountcards
+
+import android.content.Intent
+import android.os.Bundle
+import android.view.View
+import android.widget.*
+import androidx.appcompat.app.AppCompatActivity
+import android.content.Context
+import android.util.Log
+
+// 2. Главный класс Activity (экран)
+class MainActivity : AppCompatActivity() {
+
+    // 3. Объявляем переменные для элементов из XML
+    private lateinit var listView: ListView
+    private lateinit var addButton: Button
+    private lateinit var emptyText: TextView
+
+    // 4. Список для хранения карт (временное хранилище)
+    private val cards = mutableListOf<Card>()
+
+    // 5. Функция, которая вызывается при создании экрана
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        // 6. Указываем какой XML файл использовать для этого экрана
+        setContentView(R.layout.activity_main)
+
+        // 7. Находим элементы по их ID из XML
+        listView = findViewById(R.id.cardsListView)
+        addButton = findViewById(R.id.addButton)
+        emptyText = findViewById(R.id.emptyText)
+
+        // 8. ЗАГЛУШКА: добавляем тестовые карты (потом заменим на реальные)
+        cards.add(Card(1, "Starbucks", "5901234123457", 15))
+        cards.add(Card(2, "Ашан", "1234567890123", 10))
+        cards.add(Card(3, "Пятерочка", "1234567890122", 5))
+
+        // 9. Создаем адаптер, который связывает список cards с ListView
+        //    R.layout.item_card - макет для одного элемента списка
+        //    R.id.storeName - TextView куда выводить название магазина
+        //    val adapter = ArrayAdapter(this, R.layout.item_card, R.id.storeName, cards)
+
+//        val adapter = ArrayAdapter(this, R.layout.item_card, R.id.storeName,
+//            cards.map { it.storeName } // Преобразуем список карт в список названий
+//        )
+
+
+        val adapter = CardAdapter(this, cards)
+
+        listView.adapter = adapter
+        println("DEBUG: Карт в списке: ${cards.size}")
+
+        // 10. Если карт нет - показываем текст "Нет карт", иначе показываем список
+        if (cards.isEmpty()) {
+            emptyText.visibility = View.VISIBLE
+            listView.visibility = View.GONE
+        } else {
+            emptyText.visibility = View.GONE
+            listView.visibility = View.VISIBLE
+        }
+
+        // 11. Обработчик нажатия на кнопку "Добавить карту"
+        addButton.setOnClickListener {
+            // Создаем намерение перейти на экран AddCardActivity
+            val intent = Intent(this, AddCardActivity::class.java)
+            startActivity(intent)
+        }
+
+        // 12. Обработчик нажатия на элемент списка (на карту)
+        listView.setOnItemClickListener { _, _, position, _ ->
+            // Получаем карту по позиции нажатия
+            val card: Card = cards[position]
+
+            // Переходим на экран QR с данными карты
+            val intent = Intent(this, QrActivity::class.java).apply {
+                putExtra("STORE_NAME", card.storeName)
+                putExtra("CARD_NUMBER", card.cardNumber)
+
+            }
+            startActivity(intent)
+        }
+    }
+}
+
+// Вставь этот рабочий адаптер ПРЯМО В ФАЙЛ MainActivity.kt:
+class CardAdapter(
+    context: Context,
+    private val cards: List<Card>
+) : BaseAdapter() {
+
+    private val inflater = LayoutInflater.from(context)
+
+    override fun getCount(): Int = cards.size
+    override fun getItem(position: Int): Card = cards[position]
+    override fun getItemId(position: Int): Long = position.toLong()
+
+    override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
+        val view = convertView ?: inflater.inflate(R.layout.item_card, parent, false)
+
+        view.findViewById<TextView>(R.id.storeName).text = cards[position].storeName
+        view.findViewById<TextView>(R.id.cardNumber).text = "Номер: ${cards[position].cardNumber}"
+        view.findViewById<TextView>(R.id.discountInfo).text = "Скидка: ${cards[position].discount}%"
+
+        return view
+    }
+}
